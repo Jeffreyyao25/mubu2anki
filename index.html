@@ -3,151 +3,185 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>幕布 to Anki 智能转换工具</title>
-    <meta name="description" content="幕布大纲笔记转换为Anki CSV工具，支持自动过滤已完成待办。">
+    <title>Anki Converter Pro</title>
     <style>
         :root {
-            --primary-color: #007AFF;
-            --bg-color: #F2F2F7;
-            --card-bg: #FFFFFF;
-            --text-main: #1D1D1F;
-            --text-sec: #86868B;
-            --accent-red: #FF3B30;
+            --apple-blue: #0066cc;
+            --apple-bg: #ffffff;
+            --apple-grey: #f5f5f7;
+            --apple-border: #d2d2d7;
+            --apple-text: #1d1d1f;
+            --apple-sub: #86868b;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--apple-bg);
+            color: var(--apple-text);
             margin: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
         .container {
-            width: 95%;
-            max-width: 900px;
-            background: var(--card-bg);
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.06);
-            margin: 20px;
+            width: 100%;
+            max-width: 720px;
+            padding: 80px 24px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 0.8s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; transform: translateY(0); }
         }
 
         header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 60px;
         }
 
         h1 {
-            font-size: 26px;
+            font-size: 56px;
             font-weight: 600;
-            margin: 0 0 10px 0;
+            letter-spacing: -0.02em;
+            margin: 0 0 12px 0;
         }
 
         .subtitle {
-            color: var(--text-sec);
-            font-size: 14px;
+            font-size: 24px;
+            color: var(--apple-sub);
+            font-weight: 400;
         }
 
-        .upload-area {
-            border: 2px dashed #D2D2D7;
-            padding: 40px 20px;
-            text-align: center;
-            border-radius: 14px;
-            background: #FBFBFD;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-bottom: 25px;
+        .section {
+            margin-bottom: 40px;
+            width: 100%;
         }
 
-        .upload-area:hover {
-            border-color: var(--primary-color);
-            background: #F5Faff;
-        }
-
-        .upload-icon {
-            font-size: 40px;
+        .label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--apple-sub);
             margin-bottom: 12px;
             display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
         }
 
-        .options {
+        .file-drop-zone {
+            position: relative;
+            width: 100%;
+            height: 140px;
+            border: 1px solid var(--apple-border);
+            border-radius: 18px;
+            background-color: var(--apple-grey);
             display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 25px;
-            font-size: 15px;
-        }
-
-        .options label {
-            cursor: pointer;
-            display: flex;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .file-drop-zone:hover, .file-drop-zone.dragover {
+            border-color: var(--apple-blue);
+            background-color: #fff;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+            transform: scale(1.01);
+        }
+
+        .file-drop-zone .icon-text {
+            color: var(--apple-blue);
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        #file-name-info {
+            margin-top: 6px;
+            font-size: 14px;
+            color: var(--apple-sub);
+        }
+
+        input[type="file"] {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
         }
 
         textarea {
             width: 100%;
-            height: 240px;
-            border: 1px solid #D2D2D7;
-            border-radius: 12px;
-            padding: 15px;
-            box-sizing: border-box;
-            font-family: "SF Mono", "Monaco", "Consolas", monospace;
+            height: 220px;
+            padding: 24px;
+            border: 1px solid var(--apple-border);
+            border-radius: 18px;
+            font-family: "SF Mono", "Menlo", monospace;
             font-size: 13px;
-            background-color: #FAFAFA;
-            resize: vertical;
+            line-height: 1.6;
+            color: var(--apple-text);
+            background: #fff;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s;
         }
 
-        .status-msg {
-            height: 24px;
-            color: var(--accent-red);
-            font-size: 14px;
-            text-align: center;
-            margin: 10px 0;
-            font-weight: 500;
+        textarea:focus {
+            border-color: var(--apple-blue);
+            box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.08);
         }
 
-        .btn-box {
-            text-align: center;
-            margin-top: 20px;
+        .settings-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: var(--apple-grey);
+            border-radius: 18px;
         }
 
-        button {
-            background: var(--primary-color);
+        .radio-group {
+            display: flex;
+            gap: 24px;
+        }
+
+        .radio-group label {
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        input[type="radio"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--apple-blue);
+        }
+
+        .btn-apple {
+            background-color: var(--apple-blue);
             color: white;
             border: none;
-            padding: 14px 50px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
+            padding: 12px 28px;
+            border-radius: 980px;
+            font-size: 17px;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
         }
 
-        button:hover:not(:disabled) {
-            opacity: 0.9;
-            transform: scale(1.02);
-        }
-
-        button:disabled {
-            background: #D2D2D7;
-            cursor: not-allowed;
-        }
-
-        #info {
-            font-weight: 600;
-            color: var(--primary-color);
-            margin-top: 8px;
-        }
+        .btn-apple:hover { background-color: #0077ed; }
+        .btn-apple:disabled { background-color: #d2d2d7; color: #f5f5f7; cursor: not-allowed; }
 
         footer {
-            margin-top: 30px;
-            text-align: center;
+            margin-top: 100px;
+            padding-bottom: 40px;
             font-size: 12px;
-            color: #BBB;
+            color: var(--apple-sub);
         }
     </style>
 </head>
@@ -155,135 +189,140 @@
 
 <div class="container">
     <header>
-        <h1>幕布 to Anki</h1>
-        <div class="subtitle">OPML 转换工具 · 自动剔除已完成内容</div>
+        <h1>Anki Converter</h1>
+        <div class="subtitle">Designed for simplicity.</div>
     </header>
 
-    <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
-        <span class="upload-icon">📤</span>
-        <strong>点击或拖拽幕布导出的 .opml 文件到这里</strong>
-        <input type="file" id="fileInput" accept=".opml" style="display:none">
-        <div id="info"></div>
+    <div class="section">
+        <span class="label">Step 1. 选取文件</span>
+        <div class="file-drop-zone" id="drop-zone">
+            <span class="icon-text">选取 OPML 文件</span>
+            <span id="file-name-info">支持拖拽或点击</span>
+            <input type="file" id="file_input" accept=".opml">
+        </div>
     </div>
 
-    <div class="options">
-        <label><input type="radio" name="lType" id="o" value="ol" checked> 有序列表</label>
-        <label><input type="radio" name="lType" id="u" value="ul"> 无序列表</label>
+    <div class="section">
+        <span class="label">Step 2. 预览内容</span>
+        <textarea id="output_box" readonly placeholder="CSV 内容将在此处显示..."></textarea>
+        <textarea id="input_box" style="display:none;"></textarea>
     </div>
 
-    <div id="stat" class="status-msg"></div>
-
-    <textarea id="result" placeholder="转换后的 CSV 内容将在此预览..." readonly></textarea>
-
-    <div class="btn-box">
-        <button id="dlBtn" disabled>保存 mubu_for_anki.csv</button>
+    <div class="section">
+        <div class="settings-bar">
+            <div class="radio-group">
+                <label><input type="radio" name="list_type" value="ordered" checked> 有序</label>
+                <label><input type="radio" name="list_type" value="unordered"> 无序</label>
+                <label><input type="radio" name="list_type" value="none"> 素颜</label>
+            </div>
+            <button id="save_btn" class="btn-apple" disabled>保存 CSV</button>
+        </div>
     </div>
 
-    <footer>
-        Data processed locally in browser. No data uploaded to any server.
-    </footer>
+    <footer>Designed for Mubu users. Keep Learning.</footer>
 </div>
 
 <script>
-// 解码幕布特有的 URL 编码文本（还原富文本）
-function decodeMubuText(text) {
-    if (!text) return "";
-    try { return decodeURIComponent(text); } catch (e) { return text; }
-}
+(function() {
+    const inputBox = document.getElementById('input_box');
+    const outputBox = document.getElementById('output_box');
+    const fileInput = document.getElementById('file_input');
+    const saveBtn = document.getElementById('save_btn');
+    const fileNameInfo = document.getElementById('file-name-info');
+    const dropZone = document.getElementById('drop-zone');
+    const listTypes = document.getElementsByName('list_type');
 
-function transform() {
-    const file = document.getElementById('fileInput').files[0];
-    if (!file) return;
+    let opmlTitle = "Export";
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-        
-        // 核心：过滤掉标记为完成的节点
-        const outlines = xmlDoc.querySelectorAll('outline');
-        let removed = 0;
-        outlines.forEach(node => {
-            if (node.getAttribute('_complete') === 'true' || node.getAttribute('_status') === 'completed') {
-                if (node.parentNode) {
-                    node.parentNode.removeChild(node);
-                    removed++;
-                }
-            }
-        });
-        document.getElementById('stat').innerText = removed > 0 ? `✨ 已自动过滤 ${removed} 条已完成的笔记` : "";
+    function isItemCompleted(node) {
+        return node.getAttribute('_status') === '1' || 
+               node.getAttribute('_complete') === 'true' || 
+               node.getAttribute('_checked') === 'true';
+    }
 
-        // 核心：构建 CSV
-        const listTag = document.querySelector('input[name="lType"]:checked').value;
-        let csvLines = [];
+    function getNodeText(node) {
+        const mt = node.getAttribute('_mubu_text');
+        return mt ? decodeURIComponent(mt) : (node.getAttribute('text') || "");
+    }
+
+    function getNodeImg(node) {
+        const mi = node.getAttribute('_mubu_images');
+        if (!mi) return "";
+        try {
+            const imgs = JSON.parse(decodeURIComponent(mi));
+            return imgs.map(i => `<br><img src="https://mubu.com/${i.uri}" />`).join("");
+        } catch(e) { return ""; }
+    }
+
+    function convert() {
+        const opmlStr = inputBox.value;
+        if (!opmlStr) return;
+        const xml = new DOMParser().parseFromString(opmlStr, "text/xml");
+        const titleTag = xml.querySelector('title');
+        if (titleTag) opmlTitle = titleTag.textContent;
+
+        const results = [];
+        let listStyle = Array.from(listTypes).find(r => r.checked).value;
 
         function walk(node, path) {
-            const children = Array.from(node.querySelectorAll(':scope > outline'));
-            const currentRawText = node.getAttribute('_mubu_text') || node.getAttribute('text');
-            const currentText = decodeMubuText(currentRawText);
+            if (node.tagName === 'outline' && isItemCompleted(node)) return;
+            const children = Array.from(node.children).filter(c => c.tagName === 'outline' && !isItemCompleted(c));
             
-            if (currentText && children.length > 0) {
-                const pathStr = path.length > 0 ? `《${path.join(' - ')}》` : "";
-                let answerBody = `<${listTag}>`;
-                children.forEach(child => {
-                    const childContent = decodeMubuText(child.getAttribute('_mubu_text') || child.getAttribute('text'));
-                    answerBody += `<li>${childContent}</li>`;
-                });
-                answerBody += `</${listTag}>`;
-
-                if (path.length > 0) {
-                    csvLines.push(`${currentText}\t${pathStr}\t${answerBody}`);
-                }
-                children.forEach(child => walk(child, [...path, currentText]));
-            } else if (!currentText) {
-                children.forEach(child => walk(child, path));
+            let currentCard = null;
+            if (node.tagName === 'outline' && children.length > 0) {
+                const isSummary = children.some(c => Array.from(c.children).some(gc => gc.tagName === 'outline'));
+                const q = (isSummary ? "Σ " : "") + getNodeText(node) + getNodeImg(node);
+                const ctx = "《" + path.join(" - ") + "》";
+                const listTag = listStyle === 'ordered' ? 'ol' : (listStyle === 'unordered' ? 'ul' : 'div');
+                const a = (listStyle === 'none' ? "" : `<${listTag}>`) + 
+                          children.map(c => (listStyle === 'none' ? getNodeText(c)+getNodeImg(c)+"<br>" : `<li>${getNodeText(c)}${getNodeImg(c)}</li>`)).join("") + 
+                          (listStyle === 'none' ? "" : `</${listTag}>`);
+                currentCard = q.replace(/\t/g," ") + "\t" + ctx + "\t" + a.replace(/\t/g," ");
             }
+
+            const currentText = node.tagName === 'outline' ? getNodeText(node).replace(/<[^>]+>/g, "").trim() : "";
+            const nextPath = [...path];
+            if (currentText) nextPath.push(currentText);
+
+            children.forEach(c => walk(c, nextPath));
+            if (currentCard) results.push(currentCard);
         }
 
-        const body = xmlDoc.querySelector('body');
+        const body = xml.querySelector('body');
         if (body) walk(body, []);
+        outputBox.value = results.join("\n");
+        saveBtn.disabled = results.length === 0;
+    }
 
-        const finalContent = csvLines.join('\n');
-        document.getElementById('result').value = finalContent;
-        document.getElementById('dlBtn').disabled = finalContent.length === 0;
+    fileInput.addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        fileNameInfo.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = ev => { inputBox.value = ev.target.result; convert(); };
+        reader.readAsText(file);
+    });
+
+    // 拖拽视觉反馈
+    ['dragenter', 'dragover'].forEach(name => {
+        dropZone.addEventListener(name, () => dropZone.classList.add('dragover'));
+    });
+    ['dragleave', 'drop'].forEach(name => {
+        dropZone.addEventListener(name, () => dropZone.classList.remove('dragover'));
+    });
+
+    listTypes.forEach(r => r.addEventListener('change', convert));
+
+    saveBtn.onclick = () => {
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}年${String(now.getMonth()+1).padStart(2,'0')}月${String(now.getDate()).padStart(2,'0')}日`;
+        const blob = new Blob(["\ufeff" + outputBox.value], { type: 'text/csv;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${dateStr}-${opmlTitle}.csv`;
+        a.click();
     };
-    reader.readAsText(file);
-}
-
-// 事件监听
-document.getElementById('fileInput').onchange = (e) => {
-    if (e.target.files[0]) {
-        document.getElementById('info').innerText = "已选择: " + e.target.files[0].name;
-        transform();
-    }
-};
-
-document.querySelectorAll('input[name="lType"]').forEach(r => r.onchange = transform);
-
-document.getElementById('dlBtn').onclick = function() {
-    const content = document.getElementById('result').value;
-    const blob = new Blob(["\ufeff" + content], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "mubu_for_anki.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-};
-
-// 简单的拖拽支持
-const dropZone = document.getElementById('dropZone');
-dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = "#007AFF"; };
-dropZone.ondragleave = () => { dropZone.style.borderColor = "#D2D2D7"; };
-dropZone.ondrop = (e) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.name.endsWith('.opml')) {
-        document.getElementById('fileInput').files = e.dataTransfer.files;
-        document.getElementById('info').innerText = "已选择: " + file.name;
-        transform();
-    }
-};
+})();
 </script>
 </body>
 </html>
