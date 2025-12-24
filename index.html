@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>幕布 to Anki 智能转换工具</title>
+    <meta name="description" content="幕布大纲笔记转换为Anki CSV工具，支持自动过滤已完成待办。">
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-main: #1D1D1F;
+            --text-sec: #86868B;
+            --accent-red: #FF3B30;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+            margin: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+        }
+
+        .subtitle {
+            color: var(--text-sec);
+            font-size: 14px;
+        }
+
+        .upload-area {
+            border: 2px dashed #D2D2D7;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 14px;
+            background: #FBFBFD;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 25px;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-color);
+            background: #F5Faff;
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 25px;
+            font-size: 15px;
+        }
+
+        .options label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        textarea {
+            width: 100%;
+            height: 240px;
+            border: 1px solid #D2D2D7;
+            border-radius: 12px;
+            padding: 15px;
+            box-sizing: border-box;
+            font-family: "SF Mono", "Monaco", "Consolas", monospace;
+            font-size: 13px;
+            background-color: #FAFAFA;
+            resize: vertical;
+        }
+
+        .status-msg {
+            height: 24px;
+            color: var(--accent-red);
+            font-size: 14px;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+        .btn-box {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 50px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+
+        button:disabled {
+            background: #D2D2D7;
+            cursor: not-allowed;
+        }
+
+        #info {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-top: 8px;
+        }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #BBB;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>幕布 to Anki</h1>
+        <div class="subtitle">OPML 转换工具 · 自动剔除已完成内容</div>
+    </header>
+
+    <div class="upload-area" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <span class="upload-icon">📤</span>
+        <strong>点击或拖拽幕布导出的 .opml 文件到这里</strong>
+        <input type="file" id="fileInput" accept=".opml" style="display:none">
+        <div id="info"></div>
+    </div>
+
+    <div class="options">
+        <label><input type="radio" name="lType" id="o" value="ol" checked> 有序列表</label>
+        <label><input type="radio" name="lType" id="u" value="ul"> 无序列表</label>
+    </div>
+
+    <div id="stat" class="status-msg"></div>
+
+    <textarea id="result" placeholder="转换后的 CSV 内容将在此预览..." readonly></textarea>
+
+    <div class="btn-box">
+        <button id="dlBtn" disabled>保存 mubu_for_anki.csv</button>
+    </div>
+
+    <footer>
+        Data processed locally in browser. No data uploaded to any server.
+    </footer>
+</div>
+
+<script>
+// 解码幕布特有的 URL 编码文本（还原富文本）
+function decodeMubuText(text) {
+    if (!text) return "";
+    try { return decodeURIComponent(text); } catch (e) { return text; }
+}
+
+function transform() {
+    const file = document.getElementById('fileInput').files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+        
+        // 核心：过滤掉标记为完成的节点
+        const outlines = xmlDoc.querySelectorAll('outline');
+        let removed = 0;
+        outlines.forEach(node => {
+            if (node.getAttribute('_complete') === 'true' || node.getAttribute('_status') === 'completed') {
+                if (node.parentNode) {
+                    node.parentNode.removeChild(node);
+                    removed++;
+                }
+            }
+        });
+        document.getElementById('stat').innerText = removed > 0 ? `✨ 已自动过滤 ${removed} 条已完成的笔记` : "";
+
+        // 核心：构建 CSV
+        const listTag = document.querySelector('input[name="lType"]:checked').value;
+        let csvLines = [];
+
+        function walk(node, path) {
+            const children = Array.from(node.querySelectorAll(':scope > outline'));
+            const currentRawText = node.getAttribute('_mubu_text') || node.getAttribute('text');
+            const currentText = decodeMubuText(currentRawText);
+            
+            if (currentText && children.length > 0) {
+                const pathStr = path.length > 0 ? `《${path.join(' - ')}》` : "";
+                let answerBody = `<${listTag}>`;
+                children.forEach(child => {
+                    const childContent = decodeMubuText(child.getAttribute('_mubu_text') || child.getAttribute('text'));
+                    answerBody += `<li>${childContent}</li>`;
+                });
+                answerBody += `</${listTag}>`;
+
+                if (path.length > 0) {
+                    csvLines.push(`${currentText}\t${pathStr}\t${answerBody}`);
+                }
+                children.forEach(child => walk(child, [...path, currentText]));
+            } else if (!currentText) {
+                children.forEach(child => walk(child, path));
+            }
+        }
+
+        const body = xmlDoc.querySelector('body');
+        if (body) walk(body, []);
+
+        const finalContent = csvLines.join('\n');
+        document.getElementById('result').value = finalContent;
+        document.getElementById('dlBtn').disabled = finalContent.length === 0;
+    };
+    reader.readAsText(file);
+}
+
+// 事件监听
+document.getElementById('fileInput').onchange = (e) => {
+    if (e.target.files[0]) {
+        document.getElementById('info').innerText = "已选择: " + e.target.files[0].name;
+        transform();
+    }
+};
+
+document.querySelectorAll('input[name="lType"]').forEach(r => r.onchange = transform);
+
+document.getElementById('dlBtn').onclick = function() {
+    const content = document.getElementById('result').value;
+    const blob = new Blob(["\ufeff" + content], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "mubu_for_anki.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+};
+
+// 简单的拖拽支持
+const dropZone = document.getElementById('dropZone');
+dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.borderColor = "#007AFF"; };
+dropZone.ondragleave = () => { dropZone.style.borderColor = "#D2D2D7"; };
+dropZone.ondrop = (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.opml')) {
+        document.getElementById('fileInput').files = e.dataTransfer.files;
+        document.getElementById('info').innerText = "已选择: " + file.name;
+        transform();
+    }
+};
+</script>
+</body>
+</html>
