@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anki Converter Pro</title>
+    <title>Anki Converter</title>
+    <meta name="description" content="将幕布 / OPML 笔记一键转换为 Anki CSV / TSV，支持删除线整棵子树过滤。">
     <style>
         :root {
             --apple-blue: #0066cc;
@@ -28,10 +29,10 @@
         .container {
             width: 100%;
             max-width: 720px;
-            padding: 80px 24px;
+            padding: 60px 24px;
             opacity: 0;
-            transform: translateY(20px);
-            animation: fadeIn 0.8s ease forwards;
+            transform: translateY(10px);
+            animation: fadeIn 0.6s ease forwards;
         }
 
         @keyframes fadeIn {
@@ -44,64 +45,67 @@
         }
 
         h1 {
-            font-size: 56px;
+            font-size: 48px;
             font-weight: 600;
             letter-spacing: -0.02em;
-            margin: 0 0 12px 0;
+            margin: 0 0 8px 0;
         }
 
         .subtitle {
-            font-size: 24px;
+            font-size: 22px;
             color: var(--apple-sub);
             font-weight: 400;
         }
 
         .section {
-            margin-bottom: 40px;
+            margin-bottom: 32px;
             width: 100%;
         }
 
         .label {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 700;
             color: var(--apple-sub);
             margin-bottom: 12px;
             display: block;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.1em;
         }
 
         .file-drop-zone {
             position: relative;
             width: 100%;
-            height: 140px;
+            height: 120px;
             border: 1px solid var(--apple-border);
-            border-radius: 18px;
+            border-radius: 16px;
             background-color: var(--apple-grey);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .file-drop-zone:hover, .file-drop-zone.dragover {
+        .file-drop-zone:hover {
+            border-color: #86868b;
+            background-color: #ffffff;
+        }
+
+        .file-drop-zone.dragover {
             border-color: var(--apple-blue);
-            background-color: #fff;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
-            transform: scale(1.01);
+            background-color: #eef4ff;
         }
 
-        .file-drop-zone .icon-text {
+        .icon-text {
             color: var(--apple-blue);
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 500;
         }
 
         #file-name-info {
-            margin-top: 6px;
-            font-size: 14px;
+            margin-top: 4px;
+            font-size: 13px;
             color: var(--apple-sub);
         }
 
@@ -115,10 +119,10 @@
 
         textarea {
             width: 100%;
-            height: 220px;
-            padding: 24px;
+            height: 200px;
+            padding: 20px;
             border: 1px solid var(--apple-border);
-            border-radius: 18px;
+            border-radius: 16px;
             font-family: "SF Mono", "Menlo", monospace;
             font-size: 13px;
             line-height: 1.6;
@@ -126,39 +130,37 @@
             background: #fff;
             box-sizing: border-box;
             outline: none;
-            transition: all 0.3s;
+            transition: border-color 0.3s;
+            white-space: pre-wrap;
         }
 
         textarea:focus {
             border-color: var(--apple-blue);
-            box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.08);
         }
 
         .settings-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 24px;
+            padding: 16px 24px;
             background: var(--apple-grey);
-            border-radius: 18px;
+            border-radius: 16px;
         }
 
         .radio-group {
             display: flex;
-            gap: 24px;
+            gap: 20px;
         }
 
         .radio-group label {
-            font-size: 15px;
+            font-size: 14px;
             display: flex;
             align-items: center;
             cursor: pointer;
         }
 
         input[type="radio"] {
-            margin-right: 8px;
-            width: 18px;
-            height: 18px;
+            margin-right: 6px;
             accent-color: var(--apple-blue);
         }
 
@@ -166,22 +168,30 @@
             background-color: var(--apple-blue);
             color: white;
             border: none;
-            padding: 12px 28px;
+            padding: 10px 24px;
             border-radius: 980px;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
         }
 
-        .btn-apple:hover { background-color: #0077ed; }
-        .btn-apple:disabled { background-color: #d2d2d7; color: #f5f5f7; cursor: not-allowed; }
+        .btn-apple:hover {
+            background-color: #0077ed;
+        }
+
+        .btn-apple:disabled {
+            background-color: #d2d2d7;
+            color: #f5f5f7;
+            cursor: not-allowed;
+        }
 
         footer {
-            margin-top: 100px;
+            margin-top: 80px;
             padding-bottom: 40px;
             font-size: 12px;
             color: var(--apple-sub);
+            text-align: center;
         }
     </style>
 </head>
@@ -190,36 +200,38 @@
 <div class="container">
     <header>
         <h1>Anki Converter</h1>
-        <div class="subtitle">Designed for simplicity.</div>
+        <div class="subtitle">让知识回归秩序。</div>
     </header>
 
     <div class="section">
-        <span class="label">Step 1. 选取文件</span>
+        <span class="label">Step 1. 选取 OPML 文件</span>
         <div class="file-drop-zone" id="drop-zone">
-            <span class="icon-text">选取 OPML 文件</span>
-            <span id="file-name-info">支持拖拽或点击</span>
-            <input type="file" id="file_input" accept=".opml">
+            <span class="icon-text">选取文件</span>
+            <span id="file-name-info">或将文件拖拽至此处</span>
+            <input type="file" id="file_input" accept=".opml,.xml">
         </div>
     </div>
 
     <div class="section">
-        <span class="label">Step 2. 预览内容</span>
-        <textarea id="output_box" readonly placeholder="CSV 内容将在此处显示..."></textarea>
+        <span class="label">Step 2. CSV / 卡片预览</span>
+        <!-- 初始只显示 placeholder“待处理数据...” -->
+        <textarea id="output_box" readonly placeholder="待处理数据..."></textarea>
+        <!-- 隐藏的原始 OPML 文本 -->
         <textarea id="input_box" style="display:none;"></textarea>
     </div>
 
     <div class="section">
         <div class="settings-bar">
             <div class="radio-group">
-                <label><input type="radio" name="list_type" value="ordered" checked> 有序</label>
-                <label><input type="radio" name="list_type" value="unordered"> 无序</label>
-                <label><input type="radio" name="list_type" value="none"> 素颜</label>
+                <label><input type="radio" name="list_type" value="ordered" checked> 有序列表</label>
+                <label><input type="radio" name="list_type" value="unordered"> 无序列表</label>
+                <label><input type="radio" name="list_type" value="none"> 素颜列表</label>
             </div>
-            <button id="save_btn" class="btn-apple" disabled>保存 CSV</button>
+            <button id="save_btn" class="btn-apple" disabled>下载 CSV</button>
         </div>
     </div>
 
-    <footer>Designed for Mubu users. Keep Learning.</footer>
+    <footer>Designed for Mubu Users. · Hosted on GitHub Pages 推荐</footer>
 </div>
 
 <script>
@@ -233,11 +245,34 @@
     const listTypes = document.getElementsByName('list_type');
 
     let opmlTitle = "Export";
+    let opmlTitleParts = []; // 用于文件名的「一级-二级-三级标题」
+    let csvData = "";        // 真正导出的 TSV 内容
 
-    function isItemCompleted(node) {
-        return node.getAttribute('_status') === '1' || 
-               node.getAttribute('_complete') === 'true' || 
-               node.getAttribute('_checked') === 'true';
+    // ✅ 完成判断：旧版属性 + _mubu_complete + 删除线(strikethrough)
+    function isItemDone(node) {
+        if (!node || node.tagName !== 'outline') return false;
+
+        if (
+            node.getAttribute('_status') === '1' ||
+            node.getAttribute('_mubu_complete') === 'true' ||
+            node.getAttribute('_complete') === 'true' ||
+            node.getAttribute('_checked') === 'true'
+        ) {
+            return true;
+        }
+
+        const mt = node.getAttribute('_mubu_text');
+        if (mt) {
+            try {
+                const decoded = decodeURIComponent(mt);
+                if (decoded.indexOf('strikethrough') !== -1) {
+                    return true;
+                }
+            } catch (e) {
+                // 解码失败忽略
+            }
+        }
+        return false;
     }
 
     function getNodeText(node) {
@@ -245,83 +280,228 @@
         return mt ? decodeURIComponent(mt) : (node.getAttribute('text') || "");
     }
 
+    // ✅ 图片：文字和图片之间一个 <br>
     function getNodeImg(node) {
         const mi = node.getAttribute('_mubu_images');
         if (!mi) return "";
         try {
             const imgs = JSON.parse(decodeURIComponent(mi));
-            return imgs.map(i => `<br><img src="https://mubu.com/${i.uri}" />`).join("");
-        } catch(e) { return ""; }
+            return imgs.map(function(i) {
+                return '<br><img src="https://mubu.com/' + i.uri + '" />';
+            }).join("");
+        } catch(e) {
+            return "";
+        }
     }
 
     function convert() {
         const opmlStr = inputBox.value;
-        if (!opmlStr) return;
+        if (!opmlStr) {
+            // 没有内容时，清空预览，让 placeholder 生效
+            outputBox.value = "";
+            csvData = "";
+            saveBtn.disabled = true;
+            return;
+        }
+
         const xml = new DOMParser().parseFromString(opmlStr, "text/xml");
         const titleTag = xml.querySelector('title');
-        if (titleTag) opmlTitle = titleTag.textContent;
+        if (titleTag && titleTag.textContent) {
+            opmlTitle = titleTag.textContent;
+        }
 
         const results = [];
-        let listStyle = Array.from(listTypes).find(r => r.checked).value;
+        const listTypeRadio = Array.from(listTypes).find(function(r) { return r.checked; });
+        const listStyle = listTypeRadio ? listTypeRadio.value : 'ordered';
+
+        // 计算用于文件名的「一级-二级-三级标题」
+        function computeFirstTitlePath(root) {
+            const path = [];
+            let node = null;
+            for (let i = 0; i < root.children.length; i++) {
+                const n = root.children[i];
+                if (n.tagName === 'outline' && !isItemDone(n)) {
+                    node = n;
+                    break;
+                }
+            }
+            while (node && path.length < 3) {
+                const textHtml = getNodeText(node) || "";
+                const text = textHtml.replace(/<[^>]+>/g, "").trim();
+                if (text) path.push(text);
+                let child = null;
+                for (let j = 0; j < node.children.length; j++) {
+                    const c = node.children[j];
+                    if (c.tagName === 'outline' && !isItemDone(c)) {
+                        child = c;
+                        break;
+                    }
+                }
+                node = child;
+            }
+            return path;
+        }
 
         function walk(node, path) {
-            if (node.tagName === 'outline' && isItemCompleted(node)) return;
-            const children = Array.from(node.children).filter(c => c.tagName === 'outline' && !isItemCompleted(c));
-            
+            if (!node || node.tagName !== 'outline') return;
+
+            // 已完成（含删除线）则整棵子树不生成
+            if (isItemDone(node)) return;
+
+            const children = Array.from(node.children).filter(function(c) {
+                return c.tagName === 'outline';
+            });
+            const activeChildren = children.filter(function(c) {
+                return !isItemDone(c);
+            });
+
             let currentCard = null;
-            if (node.tagName === 'outline' && children.length > 0) {
-                const isSummary = children.some(c => Array.from(c.children).some(gc => gc.tagName === 'outline'));
+
+            // 有未完成子节点：Q=当前节点（第4级），A=所有子节点（第5级）
+            if (activeChildren.length > 0) {
+                const isSummary = activeChildren.some(function(c) {
+                    return Array.from(c.children).some(function(gc) {
+                        return gc.tagName === 'outline' && !isItemDone(gc);
+                    });
+                });
+
                 const q = (isSummary ? "Σ " : "") + getNodeText(node) + getNodeImg(node);
-                const ctx = "《" + path.join(" - ") + "》";
-                const listTag = listStyle === 'ordered' ? 'ol' : (listStyle === 'unordered' ? 'ul' : 'div');
-                const a = (listStyle === 'none' ? "" : `<${listTag}>`) + 
-                          children.map(c => (listStyle === 'none' ? getNodeText(c)+getNodeImg(c)+"<br>" : `<li>${getNodeText(c)}${getNodeImg(c)}</li>`)).join("") + 
-                          (listStyle === 'none' ? "" : `</${listTag}>`);
-                currentCard = q.replace(/\t/g," ") + "\t" + ctx + "\t" + a.replace(/\t/g," ");
+                const ctx = path.length ? "《" + path.join(" - ") + "》" : "";
+
+                const listTag = listStyle === 'ordered' ? 'ol'
+                                : (listStyle === 'unordered' ? 'ul' : 'div');
+
+                let a = "";
+                if (listStyle === 'none') {
+                    a = activeChildren.map(function(c) {
+                        return getNodeText(c) + getNodeImg(c) + "<br>";
+                    }).join("");
+                } else {
+                    const items = activeChildren.map(function(c) {
+                        return "<li>" + getNodeText(c) + getNodeImg(c) + "</li>";
+                    }).join("");
+                    a = "<" + listTag + ">" + items + "</" + listTag + ">";
+                }
+
+                const safeQ  = q.replace(/\t/g, " ");
+                const safeCtx = ctx.replace(/\t/g, " ");
+                const safeA  = a.replace(/\t/g, " ");
+                currentCard = safeQ + "\t" + safeCtx + "\t" + safeA;
             }
 
-            const currentText = node.tagName === 'outline' ? getNodeText(node).replace(/<[^>]+>/g, "").trim() : "";
-            const nextPath = [...path];
+            const currentHtml = getNodeText(node) || "";
+            const currentText = currentHtml.replace(/<[^>]+>/g, "").trim();
+            const nextPath = path.slice();
             if (currentText) nextPath.push(currentText);
 
-            children.forEach(c => walk(c, nextPath));
-            if (currentCard) results.push(currentCard);
+            activeChildren.forEach(function(c) {
+                walk(c, nextPath);
+            });
+
+            if (currentCard) {
+                results.push(currentCard);
+            }
         }
 
         const body = xml.querySelector('body');
-        if (body) walk(body, []);
-        outputBox.value = results.join("\n");
-        saveBtn.disabled = results.length === 0;
+        opmlTitleParts = [];
+
+        if (body) {
+            opmlTitleParts = computeFirstTitlePath(body);
+            Array.from(body.children).forEach(function(top) {
+                if (top.tagName === 'outline') {
+                    walk(top, []);
+                }
+            });
+        }
+
+        csvData = results.join("\n");
+
+        if (!results.length) {
+            outputBox.value = "未生成任何卡片：\n- 可能所有节点都被标记为完成/删除线；\n- 或 OPML 结构不符合「父=问题，子=答案」模式。";
+            saveBtn.disabled = true;
+            return;
+        }
+
+        // 预览：Q / A 都展开，方便检查
+        const previewLines = results.map(function(line, idx) {
+            const parts = line.split("\t");
+            const q = parts[0] || "";
+            const a = parts[2] || "";
+            return "#" + (idx + 1) + "\nQ: " + q + "\nA: " + (a || "(空)") + "\n";
+        });
+        outputBox.value = previewLines.join("\n");
+        saveBtn.disabled = false;
     }
 
-    fileInput.addEventListener('change', e => {
+    // 选文件
+    fileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         fileNameInfo.textContent = file.name;
         const reader = new FileReader();
-        reader.onload = ev => { inputBox.value = ev.target.result; convert(); };
+        reader.onload = function(ev) {
+            inputBox.value = ev.target.result;
+            convert();
+        };
         reader.readAsText(file);
     });
 
-    // 拖拽视觉反馈
-    ['dragenter', 'dragover'].forEach(name => {
-        dropZone.addEventListener(name, () => dropZone.classList.add('dragover'));
+    // 拖拽导入
+    ['dragenter', 'dragover'].forEach(function(name) {
+        dropZone.addEventListener(name, function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.add('dragover');
+        });
     });
-    ['dragleave', 'drop'].forEach(name => {
-        dropZone.addEventListener(name, () => dropZone.classList.remove('dragover'));
+    ['dragleave', 'drop'].forEach(function(name) {
+        dropZone.addEventListener(name, function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dropZone.classList.remove('dragover');
+        });
+    });
+    dropZone.addEventListener('drop', function(e) {
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        fileNameInfo.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            inputBox.value = ev.target.result;
+            convert();
+        };
+        reader.readAsText(file);
     });
 
-    listTypes.forEach(r => r.addEventListener('change', convert));
+    // （可选）未来如果你想手动粘贴 OPML 到隐藏 textarea，再打开这里即可用
+    inputBox.addEventListener('input', convert);
 
-    saveBtn.onclick = () => {
+    // 列表样式切换
+    Array.from(listTypes).forEach(function(r) {
+        r.addEventListener('change', convert);
+    });
+
+    // ✅ 导出：日期-一级标题-二级标题-三级标题.csv
+    saveBtn.addEventListener('click', function() {
+        if (!csvData) return;
+
         const now = new Date();
-        const dateStr = `${now.getFullYear()}年${String(now.getMonth()+1).padStart(2,'0')}月${String(now.getDate()).padStart(2,'0')}日`;
-        const blob = new Blob(["\ufeff" + outputBox.value], { type: 'text/csv;charset=utf-8' });
+        const dateStr = now.getFullYear() + "年" +
+            String(now.getMonth() + 1).padStart(2, '0') + "月" +
+            String(now.getDate()).padStart(2, '0') + "日";
+
+        const blob = new Blob(["\ufeff" + csvData], { type: "text/csv;charset=utf-8" });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `${dateStr}-${opmlTitle}.csv`;
+
+        const titleParts = (opmlTitleParts && opmlTitleParts.length ? opmlTitleParts : [opmlTitle])
+            .filter(function(t) { return !!t; });
+        const titleStr = titleParts.join('-');
+
+        a.download = dateStr + "-" + titleStr + ".csv";
         a.click();
-    };
+    });
 })();
 </script>
 </body>
