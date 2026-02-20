@@ -214,9 +214,7 @@
 
     <div class="section">
         <span class="label">Step 2. CSV / 卡片预览</span>
-        <!-- 初始只显示 placeholder“待处理数据...” -->
         <textarea id="output_box" readonly placeholder="待处理数据..."></textarea>
-        <!-- 隐藏的原始 OPML 文本 -->
         <textarea id="input_box" style="display:none;"></textarea>
     </div>
 
@@ -357,19 +355,23 @@
 
             let currentCard = null;
 
-            // 有未完成子节点：Q=当前节点（第4级），A=所有子节点（第5级）
+            // 判断当前节点是否是一个包含更深层嵌套的“汇总”节点
+            let isSummary = false;
             if (activeChildren.length > 0) {
-                const isSummary = activeChildren.some(function(c) {
+                isSummary = activeChildren.some(function(c) {
                     return Array.from(c.children).some(function(gc) {
                         return gc.tagName === 'outline' && !isItemDone(gc);
                     });
                 });
+            }
 
-                const q = (isSummary ? "Σ " : "") + getNodeText(node) + getNodeImg(node);
+            // 【关键修改】如果是有未完成子节点，且“不是”汇总节点，才生成卡片！
+            if (activeChildren.length > 0 && !isSummary) {
+                const q = getNodeText(node) + getNodeImg(node);
                 const ctx = path.length ? "《" + path.join(" - ") + "》" : "";
 
                 const listTag = listStyle === 'ordered' ? 'ol'
-                                : (listStyle === 'unordered' ? 'ul' : 'div');
+                              : (listStyle === 'unordered' ? 'ul' : 'div');
 
                 let a = "";
                 if (listStyle === 'none') {
@@ -389,6 +391,7 @@
                 currentCard = safeQ + "\t" + safeCtx + "\t" + safeA;
             }
 
+            // 继续遍历子节点
             const currentHtml = getNodeText(node) || "";
             const currentText = currentHtml.replace(/<[^>]+>/g, "").trim();
             const nextPath = path.slice();
